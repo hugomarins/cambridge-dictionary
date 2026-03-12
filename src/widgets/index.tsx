@@ -20,9 +20,9 @@ import {
   SETTING_WORDLIST_IDS,
   SETTING_ROOT_REM,
 } from "../lib/constants";
-import { fetchWordDefinitions, fetchWordFromUrl, findWordBySenseId } from "../lib/scraper";
+import { fetchWordFromUrl, findWordBySenseId } from "../lib/scraper";
 import { fetchWordlistEntries } from "../lib/wordlist";
-import { createWordRem, createMultipleWordRems } from "../lib/rem-creator";
+import { createWordRem } from "../lib/rem-creator";
 import { log } from "../lib/logging";
 
 async function onActivate(plugin: ReactRNPlugin) {
@@ -53,6 +53,23 @@ async function onActivate(plugin: ReactRNPlugin) {
       dimensions: { height: "auto", width: "100%" },
       widgetTabIcon: `${plugin.rootURL}cambridge.svg`,
       widgetTabTitle: "Cambridge Dictionary",
+    }
+  );
+
+  // ─── Register Popup Widgets (for command input) ───
+  await plugin.app.registerWidget(
+    "cambridge_search_input",
+    WidgetLocation.Popup,
+    {
+      dimensions: { width: 400, height: "auto" },
+    }
+  );
+
+  await plugin.app.registerWidget(
+    "cambridge_url_input",
+    WidgetLocation.Popup,
+    {
+      dimensions: { width: 500, height: "auto" },
     }
   );
 
@@ -95,63 +112,23 @@ async function onActivate(plugin: ReactRNPlugin) {
 
   // ─── Register Commands ───
 
-  // Search Word command
+  // Search Word command — opens popup widget
   await plugin.app.registerCommand({
     id: "cambridge-search",
     name: "Cambridge: Search Word",
     description: "Look up a word on Cambridge Dictionary and import definitions",
     action: async () => {
-      const word = window.prompt(
-        "Enter a word to look up on Cambridge Dictionary:"
-      );
-      if (!word) return;
-
-      log(plugin, `Searching for "${word}"...`, true);
-
-      const entries = await fetchWordDefinitions(word);
-      if (entries.length === 0) {
-        log(plugin, `No definitions found for "${word}" on Cambridge Dictionary.`, true);
-        return;
-      }
-
-      // For now, import all definitions. The user can also use the
-      // selected-text widget for single definitions.
-      const count = await createMultipleWordRems(plugin, entries);
-      log(plugin, `Imported ${count} definition(s) for "${word}".`, true);
+      await plugin.widget.openPopup("cambridge_search_input");
     },
   });
 
-  // Import from URL command
+  // Import from URL command — opens popup widget
   await plugin.app.registerCommand({
     id: "cambridge-from-url",
     name: "Cambridge: Import from URL",
-    description:
-      "Import word definitions from a Cambridge Dictionary URL",
+    description: "Import word definitions from a Cambridge Dictionary URL",
     action: async () => {
-      const url = window.prompt(
-        "Enter a Cambridge Dictionary URL (e.g. https://dictionary.cambridge.org/dictionary/english/example):"
-      );
-      if (!url) return;
-
-      if (!url.includes("dictionary.cambridge.org")) {
-        log(
-          plugin,
-          "Please provide a valid Cambridge Dictionary URL.",
-          true
-        );
-        return;
-      }
-
-      log(plugin, "Fetching definitions from URL...", true);
-
-      const entries = await fetchWordFromUrl(url);
-      if (entries.length === 0) {
-        log(plugin, "No definitions found at that URL.", true);
-        return;
-      }
-
-      const count = await createMultipleWordRems(plugin, entries);
-      log(plugin, `Imported ${count} definition(s) from URL.`, true);
+      await plugin.widget.openPopup("cambridge_url_input");
     },
   });
 

@@ -243,6 +243,19 @@ function parseWordPage(html: string): CambridgeWordEntry[] {
 }
 
 /**
+ * Fetch HTML through a CORS proxy to bypass same-origin restrictions
+ * in the RemNote plugin iframe.
+ */
+async function fetchWithCorsProxy(targetUrl: string): Promise<string> {
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+  const response = await fetch(proxyUrl);
+  if (!response.ok) {
+    throw new Error(`Proxy fetch failed: ${response.status} ${response.statusText}`);
+  }
+  return response.text();
+}
+
+/**
  * Fetch and parse word definitions from Cambridge Dictionary.
  *
  * @param word - The word to look up
@@ -266,22 +279,7 @@ export async function fetchWordFromUrl(
   url: string
 ): Promise<CambridgeWordEntry[]> {
   try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": USER_AGENT,
-        "Accept-Language": "en-US",
-        Host: "dictionary.cambridge.org",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(
-        `Cambridge Dictionary fetch failed: ${response.status} ${response.statusText}`
-      );
-      return [];
-    }
-
-    const html = await response.text();
+    const html = await fetchWithCorsProxy(url);
     return parseWordPage(html);
   } catch (error) {
     console.error("Failed to fetch from Cambridge Dictionary:", error);
