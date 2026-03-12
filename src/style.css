@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+:host-context(div) {
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  tab-size: 4;
+}
+
+body,
+:host {
+  margin: 0;
+  line-height: inherit;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Cambridge Dictionary specific styles */
+.cambridge-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.cambridge-audio-btn:hover {
+  opacity: 1;
+}
+
+.cambridge-save-btn {
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.cambridge-save-btn:hover {
+  opacity: 1;
+}
