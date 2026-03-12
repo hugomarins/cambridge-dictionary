@@ -17,5 +17,6 @@
       "type": "All",
       "level": "ReadCreateModify"
     }
-  ]
+  ],
+  "unlisted": true
 }
