@@ -2,10 +2,11 @@ import {
   WidgetLocation,
   declareIndexPlugin,
   ReactRNPlugin,
+  SetRemType,
 } from "@remnote/plugin-sdk";
 import "../style.css";
 import {
-  CAMBRIDGE_POWERUP_CODE,
+  powerupCode,
   SLOT_GRAMMAR,
   SLOT_PRONUNCIATION,
   SLOT_DEFINITION,
@@ -19,8 +20,8 @@ async function onActivate(plugin: ReactRNPlugin) {
   // ─── Register the Cambridge Dictionary Powerup ───
   // The Rem name IS the word — no separate "Word" slot needed.
   await plugin.app.registerPowerup({
-    name: "Cambridge Dictionary",
-    code: CAMBRIDGE_POWERUP_CODE,
+    name: "Eng Dictionary",
+    code: powerupCode,
     description: "A word entry from the dictionary",
     options: {
       slots: [
@@ -40,7 +41,7 @@ async function onActivate(plugin: ReactRNPlugin) {
     {
       dimensions: { height: "auto", width: "100%" },
       widgetTabIcon: `${plugin.rootURL}cambridge.svg`,
-      widgetTabTitle: "Cambridge Dictionary",
+      widgetTabTitle: "English Dictionary",
     }
   );
 
@@ -96,50 +97,51 @@ async function onActivate(plugin: ReactRNPlugin) {
       "Strips the Cambridge Dictionary powerup from all tagged Rems and deletes them. Use after a schema change when old entries are no longer needed.",
     action: async () => {
       const confirmed = confirm(
-        "⚠️ Remove All Cambridge Dictionary Rems\n\n" +
-          "This will permanently DELETE all Rems tagged with the Cambridge Dictionary powerup.\n\n" +
-          "Use this to clean up test entries after a schema change.\n\n" +
-          "This cannot be undone. Continue?"
+        "⚠️ Remove Cambridge Dictionary Powerup Tags\n\n" +
+        "This will remove the Cambridge Dictionary powerup tag from all tagged Rems (the Rems themselves are kept).\n\n" +
+        "Afterwards, manually delete the [[Cambridge Dictionary]] Rem from RemNote to clear the old slot columns.\n\n" +
+        "Continue?"
       );
       if (!confirmed) return;
 
-      const powerup = await plugin.powerup.getPowerupByCode(
-        CAMBRIDGE_POWERUP_CODE
-      );
-      if (!powerup) {
-        await plugin.app.toast("Cambridge Dictionary powerup not found.");
+      // Find by name — getPowerupByCode won't work since the plugin no longer
+      // owns "cambridge_dictionary". findByName works on any Rem, including
+      // orphaned legacy powerup Rems.
+      const LEGACY_CODE = "cambridge_dictionary";
+      const legacyRem = await plugin.rem.findByName(["Cambridge Dictionary"], null);
+      if (!legacyRem) {
+        await plugin.app.toast("Legacy 'Cambridge Dictionary' Rem not found — already deleted?");
         return;
       }
 
-      const taggedRems = (await powerup.taggedRem()) || [];
-      if (taggedRems.length === 0) {
-        await plugin.app.toast("No Cambridge Dictionary tagged Rems found.");
-        return;
-      }
-
-      await plugin.app.toast(
-        `Found ${taggedRems.length} Rem(s). Removing...`
-      );
+      // Strip the tag from any still-tagged Rems
+      const taggedRems = (await legacyRem.taggedRem()) || [];
+      await plugin.app.toast(`Found ${taggedRems.length} tagged Rem(s). Cleaning...`);
 
       let removed = 0;
       for (const rem of taggedRems) {
         try {
-          // Strip the powerup first (required before deleting)
-          await rem.removePowerup(CAMBRIDGE_POWERUP_CODE);
-          // Then delete the Rem itself
-          await rem.remove();
+          await rem.removePowerup(LEGACY_CODE);
           removed++;
         } catch (e) {
-          console.error(`Failed to remove Rem ${rem._id}:`, e);
+          console.error(`Failed to remove powerup from Rem ${rem._id}:`, e);
         }
       }
 
-      await plugin.app.toast(
-        `✅ Deleted ${removed} / ${taggedRems.length} Rem(s).\n\n` +
-        `Note: To remove the old slot columns (Word, Meaning, Picture) from the powerup itself, ` +
-        `manually delete the "Cambridge Dictionary" Rem in RemNote (find it via [[Cambridge Dictionary]]).`
-      );
-      log(plugin, `Cleanup: deleted ${removed} tagged Rems.`);
+      // Delete the legacy powerup Rem itself.
+      // RemNote prevents removing powerup Rems — try setType(DEFAULT_TYPE) first
+      // to strip the powerup designation, then remove.
+      try {
+        await legacyRem.setType(SetRemType.DEFAULT_TYPE);
+        await legacyRem.remove();
+        await plugin.app.toast(
+          `✅ Stripped tag from ${removed} Rem(s) and deleted the old Cambridge Dictionary powerup.`
+        );
+      } catch (e) {
+        console.error("Failed to delete legacy powerup Rem:", e);
+        await plugin.app.toast(`Stripped ${removed} tag(s) but could not delete the powerup Rem: ${e}`);
+      }
+      log(plugin, `Legacy cleanup done: ${removed} Rems untagged.`);
     },
   });
 
@@ -147,6 +149,6 @@ async function onActivate(plugin: ReactRNPlugin) {
   log(plugin, "Cambridge Dictionary plugin activated.");
 }
 
-async function onDeactivate(_: ReactRNPlugin) {}
+async function onDeactivate(_: ReactRNPlugin) { }
 
 declareIndexPlugin(onActivate, onDeactivate);

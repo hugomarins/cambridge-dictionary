@@ -8,7 +8,7 @@
 import { RNPlugin } from "@remnote/plugin-sdk";
 import { CambridgeWordEntry } from "./models";
 import {
-  CAMBRIDGE_POWERUP_CODE,
+  powerupCode,
   SLOT_GRAMMAR,
   SLOT_PRONUNCIATION,
   SLOT_DEFINITION,
@@ -59,25 +59,25 @@ export async function createWordRem(
   await wordRem.setText([entry.wordTitle]);
 
   // Add the Cambridge Dictionary powerup
-  await wordRem.addPowerup(CAMBRIDGE_POWERUP_CODE);
+  await wordRem.addPowerup(powerupCode);
 
   // Grammar (part of speech)
   if (entry.wordPartOfSpeech) {
-    await wordRem.setPowerupProperty(CAMBRIDGE_POWERUP_CODE, SLOT_GRAMMAR, [
+    await wordRem.setPowerupProperty(powerupCode, SLOT_GRAMMAR, [
       entry.wordPartOfSpeech,
     ]);
   }
 
   // Pronunciation (IPA)
   if (entry.wordProUk) {
-    await wordRem.setPowerupProperty(CAMBRIDGE_POWERUP_CODE, SLOT_PRONUNCIATION, [
+    await wordRem.setPowerupProperty(powerupCode, SLOT_PRONUNCIATION, [
       entry.wordProUk,
     ]);
   }
 
   // Definition
   if (entry.wordSpecific) {
-    await wordRem.setPowerupProperty(CAMBRIDGE_POWERUP_CODE, SLOT_DEFINITION, [
+    await wordRem.setPowerupProperty(powerupCode, SLOT_DEFINITION, [
       entry.wordSpecific,
     ]);
   }
@@ -85,14 +85,14 @@ export async function createWordRem(
   // Examples
   const examplesStr = entry.wordExamples.join("\n");
   if (examplesStr) {
-    await wordRem.setPowerupProperty(CAMBRIDGE_POWERUP_CODE, SLOT_EXAMPLES, [
+    await wordRem.setPowerupProperty(powerupCode, SLOT_EXAMPLES, [
       examplesStr,
     ]);
   }
 
   // Audio — use RichTextAudioInterface so RemNote renders a native audio player
   if (entry.wordUkMedia) {
-    await wordRem.setPowerupProperty(CAMBRIDGE_POWERUP_CODE, SLOT_AUDIO, [
+    await wordRem.setPowerupProperty(powerupCode, SLOT_AUDIO, [
       { i: "a", url: entry.wordUkMedia, onlyAudio: true } as any,
     ]);
   }

@@ -1,5 +1,5 @@
 // Powerup
-export const CAMBRIDGE_POWERUP_CODE = "cambridge_dictionary";
+export const powerupCode = "english_dict";
 
 // Slot codes (properties on the powerup)
 export const SLOT_GRAMMAR = "grammar";
