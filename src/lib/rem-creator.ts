@@ -14,6 +14,7 @@ import {
   SLOT_DEFINITION,
   SLOT_EXAMPLES,
   SLOT_AUDIO,
+  SLOT_EXTRA,
   SETTING_ROOT_REM,
 } from "./constants";
 import { log } from "./logging";
@@ -94,6 +95,13 @@ export async function createWordRem(
   if (entry.wordUkMedia) {
     await wordRem.setPowerupProperty(powerupCode, SLOT_AUDIO, [
       { i: "a", url: entry.wordUkMedia, onlyAudio: true } as any,
+    ]);
+  }
+
+  // Extra (synonyms, antonyms, general meaning context)
+  if (entry.usage) {
+    await wordRem.setPowerupProperty(powerupCode, SLOT_EXTRA, [
+      entry.usage,
     ]);
   }
 

@@ -12,6 +12,7 @@ import {
   SLOT_DEFINITION,
   SLOT_EXAMPLES,
   SLOT_AUDIO,
+  SLOT_EXTRA,
   SETTING_ROOT_REM,
 } from "../lib/constants";
 import { log } from "../lib/logging";
@@ -30,6 +31,7 @@ async function onActivate(plugin: ReactRNPlugin) {
         { code: SLOT_DEFINITION, name: "Definition" },
         { code: SLOT_EXAMPLES, name: "Examples" },
         { code: SLOT_AUDIO, name: "Audio" },
+        { code: SLOT_EXTRA, name: "Extra" },
       ],
     },
   });
@@ -56,6 +58,12 @@ async function onActivate(plugin: ReactRNPlugin) {
     "cambridge_url_input",
     WidgetLocation.Popup,
     { dimensions: { width: 520, height: "auto" } }
+  );
+
+  await plugin.app.registerWidget(
+    "cambridge_definition_picker",
+    WidgetLocation.Popup,
+    { dimensions: { width: 560, height: "auto" } }
   );
 
   // ─── Register Settings ───
