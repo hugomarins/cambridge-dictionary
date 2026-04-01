@@ -20,33 +20,30 @@ function CambridgeSearchInput() {
     if (!word.trim()) return;
 
     setIsLoading(true);
-    setStatus(`Searching for "${word}"...`);
+    setStatus(`Searching for "${word.trim()}"...`);
 
-    try {
-      const entries = await fetchWordDefinitions(word.trim());
-      if (entries.length === 0) {
-        setStatus(`No definitions found for "${word}".`);
-        setIsLoading(false);
-        return;
-      }
-
-      setStatus(`Found ${entries.length} definition(s). Importing...`);
-      const count = await createMultipleWordRems(plugin, entries);
-      log(plugin, `Imported ${count} definition(s) for "${word}".`, true);
-      await plugin.widget.closePopup();
-    } catch (error) {
-      setStatus(`Error: ${error}`);
+    const entries = await fetchWordDefinitions(word.trim());
+    if (entries.length === 0) {
+      setStatus(`No definitions found for "${word.trim()}".`);
       setIsLoading(false);
+      return;
     }
+
+    setStatus(`Found ${entries.length} definition(s). Importing...`);
+    const count = await createMultipleWordRems(plugin, entries);
+    log(plugin, `Imported ${count} definition(s) for "${word.trim()}".`, true);
+    await plugin.widget.closePopup();
   };
 
   return (
-    <div className="flex flex-col p-4 gap-4">
-      <div className="text-2xl font-bold">Cambridge: Search Word</div>
+    <div className="flex flex-col p-4 gap-4 rn-clr-background">
+      <div className="text-2xl font-bold rn-clr-content-primary">
+        Cambridge: Search Word
+      </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <label htmlFor="search-word-input" className="font-semibold">
+          <label htmlFor="search-word-input" className="font-semibold rn-clr-content-primary">
             Enter a word:
           </label>
           <input
@@ -54,13 +51,14 @@ function CambridgeSearchInput() {
             id="search-word-input"
             type="text"
             value={word}
-            onChange={(e) => setWord(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSubmit(e);
+            onChange={(e) => {
+              setWord(e.target.value);
+              setStatus("");
             }}
             placeholder="e.g., cranky"
             disabled={isLoading}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800"
+            className="px-3 py-2 rounded rn-clr-content-primary rn-clr-background-main border-solid border rn-clr-border-opaque"
+            style={{ outline: "none" }}
           />
           {status && (
             <div className="text-sm rn-clr-content-secondary">{status}</div>
@@ -72,18 +70,19 @@ function CambridgeSearchInput() {
             type="button"
             onClick={() => plugin.widget.closePopup()}
             disabled={isLoading}
-            className="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="px-4 py-2 rounded rn-clr-content-secondary border-solid border rn-clr-border-opaque"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !word.trim()}
             className="px-4 py-2 font-semibold rounded"
             style={{
-              backgroundColor: isLoading ? "#93C5FD" : "#3B82F6",
+              backgroundColor: isLoading || !word.trim() ? "#93C5FD" : "#3B82F6",
               color: "white",
               border: "none",
+              cursor: isLoading || !word.trim() ? "not-allowed" : "pointer",
             }}
           >
             {isLoading ? "Searching..." : "Search & Import"}

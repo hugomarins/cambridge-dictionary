@@ -17,41 +17,39 @@ function CambridgeUrlInput() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.trim()) return;
+    const trimmed = url.trim();
+    if (!trimmed) return;
 
-    if (!url.includes("dictionary.cambridge.org")) {
+    if (!trimmed.includes("dictionary.cambridge.org")) {
       setStatus("Please provide a valid Cambridge Dictionary URL.");
       return;
     }
 
     setIsLoading(true);
-    setStatus("Fetching definitions from URL...");
+    setStatus("Fetching definitions...");
 
-    try {
-      const entries = await fetchWordFromUrl(url.trim());
-      if (entries.length === 0) {
-        setStatus("No definitions found at that URL.");
-        setIsLoading(false);
-        return;
-      }
-
-      setStatus(`Found ${entries.length} definition(s). Importing...`);
-      const count = await createMultipleWordRems(plugin, entries);
-      log(plugin, `Imported ${count} definition(s) from URL.`, true);
-      await plugin.widget.closePopup();
-    } catch (error) {
-      setStatus(`Error: ${error}`);
+    const entries = await fetchWordFromUrl(trimmed);
+    if (entries.length === 0) {
+      setStatus("No definitions found. Make sure the URL contains a word slug, e.g. /dictionary/english/cranky");
       setIsLoading(false);
+      return;
     }
+
+    setStatus(`Found ${entries.length} definition(s). Importing...`);
+    const count = await createMultipleWordRems(plugin, entries);
+    log(plugin, `Imported ${count} definition(s) from URL.`, true);
+    await plugin.widget.closePopup();
   };
 
   return (
-    <div className="flex flex-col p-4 gap-4">
-      <div className="text-2xl font-bold">Cambridge: Import from URL</div>
+    <div className="flex flex-col p-4 gap-4 rn-clr-background">
+      <div className="text-2xl font-bold rn-clr-content-primary">
+        Cambridge: Import from URL
+      </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <label htmlFor="url-input" className="font-semibold">
+          <label htmlFor="url-input" className="font-semibold rn-clr-content-primary">
             Cambridge Dictionary URL:
           </label>
           <input
@@ -63,12 +61,10 @@ function CambridgeUrlInput() {
               setUrl(e.target.value);
               setStatus("");
             }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSubmit(e);
-            }}
-            placeholder="https://dictionary.cambridge.org/dictionary/english/example"
+            placeholder="https://dictionary.cambridge.org/dictionary/english/cranky"
             disabled={isLoading}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-sm"
+            className="px-3 py-2 rounded text-sm rn-clr-content-primary rn-clr-background-main border-solid border rn-clr-border-opaque"
+            style={{ outline: "none" }}
           />
           {status && (
             <div className="text-sm rn-clr-content-secondary">{status}</div>
@@ -80,18 +76,19 @@ function CambridgeUrlInput() {
             type="button"
             onClick={() => plugin.widget.closePopup()}
             disabled={isLoading}
-            className="px-4 py-2 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="px-4 py-2 rounded rn-clr-content-secondary border-solid border rn-clr-border-opaque"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !url.trim()}
             className="px-4 py-2 font-semibold rounded"
             style={{
-              backgroundColor: isLoading ? "#93C5FD" : "#3B82F6",
+              backgroundColor: isLoading || !url.trim() ? "#93C5FD" : "#3B82F6",
               color: "white",
               border: "none",
+              cursor: isLoading || !url.trim() ? "not-allowed" : "pointer",
             }}
           >
             {isLoading ? "Importing..." : "Import"}

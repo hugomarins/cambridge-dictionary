@@ -8,14 +8,14 @@
   "version": {
     "major": 0,
     "minor": 1,
-    "patch": 0
+    "patch": 1
   },
   "description": "Look up words on Cambridge Dictionary. Import definitions with pronunciation, audio, examples, and images. Supports wordlist import from Cambridge Plus.",
   "requestNative": true,
   "requiredScopes": [
     {
       "type": "All",
-      "level": "ReadCreateModify"
+      "level": "ReadCreateModifyDelete"
     }
   ],
   "unlisted": true

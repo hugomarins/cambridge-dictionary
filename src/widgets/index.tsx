@@ -6,41 +6,29 @@ import {
 import "../style.css";
 import {
   CAMBRIDGE_POWERUP_CODE,
-  SLOT_WORD,
   SLOT_GRAMMAR,
   SLOT_PRONUNCIATION,
   SLOT_DEFINITION,
-  SLOT_MEANING,
   SLOT_EXAMPLES,
   SLOT_AUDIO,
-  SLOT_PICTURE,
-  SETTING_COOKIE,
-  SETTING_PRONUNCIATION_UK,
-  SETTING_PRONUNCIATION_US,
-  SETTING_WORDLIST_IDS,
   SETTING_ROOT_REM,
 } from "../lib/constants";
-import { fetchWordFromUrl, findWordBySenseId } from "../lib/scraper";
-import { fetchWordlistEntries } from "../lib/wordlist";
-import { createWordRem } from "../lib/rem-creator";
 import { log } from "../lib/logging";
 
 async function onActivate(plugin: ReactRNPlugin) {
   // ─── Register the Cambridge Dictionary Powerup ───
+  // The Rem name IS the word — no separate "Word" slot needed.
   await plugin.app.registerPowerup({
     name: "Cambridge Dictionary",
     code: CAMBRIDGE_POWERUP_CODE,
-    description: "A word entry imported from Cambridge Dictionary",
+    description: "A word entry from the dictionary",
     options: {
       slots: [
-        { code: SLOT_WORD, name: "Word" },
         { code: SLOT_GRAMMAR, name: "Grammar" },
         { code: SLOT_PRONUNCIATION, name: "Pronunciation" },
         { code: SLOT_DEFINITION, name: "Definition" },
-        { code: SLOT_MEANING, name: "Meaning" },
         { code: SLOT_EXAMPLES, name: "Examples" },
         { code: SLOT_AUDIO, name: "Audio" },
-        { code: SLOT_PICTURE, name: "Picture" },
       ],
     },
   });
@@ -60,17 +48,13 @@ async function onActivate(plugin: ReactRNPlugin) {
   await plugin.app.registerWidget(
     "cambridge_search_input",
     WidgetLocation.Popup,
-    {
-      dimensions: { width: 400, height: "auto" },
-    }
+    { dimensions: { width: 400, height: "auto" } }
   );
 
   await plugin.app.registerWidget(
     "cambridge_url_input",
     WidgetLocation.Popup,
-    {
-      dimensions: { width: 500, height: "auto" },
-    }
+    { dimensions: { width: 520, height: "auto" } }
   );
 
   // ─── Register Settings ───
@@ -82,134 +66,83 @@ async function onActivate(plugin: ReactRNPlugin) {
     defaultValue: "Cambridge Dictionary",
   });
 
-  await plugin.settings.registerStringSetting({
-    id: SETTING_COOKIE,
-    title: "Cambridge Cookie",
-    description:
-      'Session cookie for Cambridge Plus (needed for wordlist import). To get it:\n1. Open dictionary.cambridge.org and sign in\n2. Open DevTools (F12) → Application → Cookies → dictionary.cambridge.org\n3. Copy all cookie values as a single string (name1=value1; name2=value2; ...)',
-  });
-
-  await plugin.settings.registerBooleanSetting({
-    id: SETTING_PRONUNCIATION_UK,
-    title: "Show UK Pronunciation",
-    description: "Include UK IPA pronunciation when importing words",
-    defaultValue: true,
-  });
-
-  await plugin.settings.registerBooleanSetting({
-    id: SETTING_PRONUNCIATION_US,
-    title: "Show US Pronunciation",
-    description: "Include US IPA pronunciation when importing words",
-    defaultValue: true,
-  });
-
-  await plugin.settings.registerStringSetting({
-    id: SETTING_WORDLIST_IDS,
-    title: "Wordlist IDs",
-    description:
-      "Comma-separated Cambridge Plus wordlist IDs for batch import. Example: 21215803,21215804",
-  });
-
   // ─── Register Commands ───
 
-  // Search Word command — opens popup widget
+  // Search Word — opens popup
   await plugin.app.registerCommand({
     id: "cambridge-search",
     name: "Cambridge: Search Word",
-    description: "Look up a word on Cambridge Dictionary and import definitions",
+    description: "Look up a word and import its definitions",
     action: async () => {
       await plugin.widget.openPopup("cambridge_search_input");
     },
   });
 
-  // Import from URL command — opens popup widget
+  // Import from URL — opens popup
   await plugin.app.registerCommand({
     id: "cambridge-from-url",
     name: "Cambridge: Import from URL",
-    description: "Import word definitions from a Cambridge Dictionary URL",
+    description: "Import a word from a Cambridge Dictionary URL",
     action: async () => {
       await plugin.widget.openPopup("cambridge_url_input");
     },
   });
 
-  // Import Wordlist command
+  // Debug: nuke all Cambridge Dictionary tagged Rems (strip powerup + delete Rem)
   await plugin.app.registerCommand({
-    id: "cambridge-import-wordlist",
-    name: "Cambridge: Import Wordlist",
+    id: "cambridge-cleanup-slots",
+    name: "Cambridge: Remove All Tagged Rems (Debug)",
     description:
-      "Import all words from your Cambridge Plus wordlists (requires cookie and wordlist IDs in settings)",
+      "Strips the Cambridge Dictionary powerup from all tagged Rems and deletes them. Use after a schema change when old entries are no longer needed.",
     action: async () => {
-      const cookie = (await plugin.settings.getSetting(SETTING_COOKIE)) as
-        | string
-        | undefined;
-      if (!cookie) {
-        log(
-          plugin,
-          "Please set your Cambridge cookie in the plugin settings first.",
-          true
-        );
+      const confirmed = confirm(
+        "⚠️ Remove All Cambridge Dictionary Rems\n\n" +
+          "This will permanently DELETE all Rems tagged with the Cambridge Dictionary powerup.\n\n" +
+          "Use this to clean up test entries after a schema change.\n\n" +
+          "This cannot be undone. Continue?"
+      );
+      if (!confirmed) return;
+
+      const powerup = await plugin.powerup.getPowerupByCode(
+        CAMBRIDGE_POWERUP_CODE
+      );
+      if (!powerup) {
+        await plugin.app.toast("Cambridge Dictionary powerup not found.");
         return;
       }
 
-      const wordlistIdsStr = (await plugin.settings.getSetting(
-        SETTING_WORDLIST_IDS
-      )) as string | undefined;
-      if (!wordlistIdsStr) {
-        log(
-          plugin,
-          "Please set your wordlist IDs in the plugin settings first.",
-          true
-        );
+      const taggedRems = (await powerup.taggedRem()) || [];
+      if (taggedRems.length === 0) {
+        await plugin.app.toast("No Cambridge Dictionary tagged Rems found.");
         return;
       }
 
-      const wordlistIds = wordlistIdsStr
-        .split(",")
-        .map((id) => id.trim())
-        .filter((id) => id);
+      await plugin.app.toast(
+        `Found ${taggedRems.length} Rem(s). Removing...`
+      );
 
-      if (wordlistIds.length === 0) {
-        log(plugin, "No valid wordlist IDs found in settings.", true);
-        return;
-      }
-
-      let totalImported = 0;
-      for (const wlId of wordlistIds) {
-        log(plugin, `Fetching wordlist ${wlId}...`, true);
-
-        const wordlistEntries = await fetchWordlistEntries(wlId, cookie);
-        log(
-          plugin,
-          `Found ${wordlistEntries.length} words in wordlist ${wlId}. Fetching definitions...`,
-          true
-        );
-
-        for (const wlEntry of wordlistEntries) {
-          // Fetch the full page for this word
-          const wordEntries = await fetchWordFromUrl(wlEntry.wordUrl);
-
-          if (wordEntries.length > 0) {
-            // Try to match by sense ID first
-            const matched = findWordBySenseId(wordEntries, wlEntry.senseId);
-            if (matched) {
-              const success = await createWordRem(plugin, matched);
-              if (success) totalImported++;
-            } else if (wordEntries.length > 0) {
-              // Fall back to importing the first definition
-              const success = await createWordRem(plugin, wordEntries[0]);
-              if (success) totalImported++;
-            }
-          }
+      let removed = 0;
+      for (const rem of taggedRems) {
+        try {
+          // Strip the powerup first (required before deleting)
+          await rem.removePowerup(CAMBRIDGE_POWERUP_CODE);
+          // Then delete the Rem itself
+          await rem.remove();
+          removed++;
+        } catch (e) {
+          console.error(`Failed to remove Rem ${rem._id}:`, e);
         }
       }
 
-      log(
-        plugin,
-        `Wordlist import complete! Imported ${totalImported} definitions.`,
-        true
+      await plugin.app.toast(
+        `✅ Deleted ${removed} / ${taggedRems.length} Rem(s).\n\n` +
+        `Note: To remove the old slot columns (Word, Meaning, Picture) from the powerup itself, ` +
+        `manually delete the "Cambridge Dictionary" Rem in RemNote (find it via [[Cambridge Dictionary]]).`
       );
+      log(plugin, `Cleanup: deleted ${removed} tagged Rems.`);
     },
   });
+
 
   log(plugin, "Cambridge Dictionary plugin activated.");
 }

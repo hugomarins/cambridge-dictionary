@@ -1,17 +1,19 @@
 import {
   renderWidget,
   usePlugin,
+  RNPlugin,
   LoadingSpinnerPlugin,
   useTrackerPlugin,
   SelectionType,
 } from "@remnote/plugin-sdk";
+import React from "react";
 import { PreviewCambridgeDefinitions } from "../components/PreviewCambridgeDefinitions";
 import { CambridgeWordEntry } from "../lib/models";
 import { useDebounce } from "../hooks/useDebounce";
-import { fetchWordDefinitions } from "../lib/scraper";
+import { useFetch } from "../hooks/useFetch";
+import { API_BASE_URL, mapApiResponseToEntries } from "../lib/scraper";
 import { createWordRem, createMultipleWordRems } from "../lib/rem-creator";
 import { log } from "../lib/logging";
-import React, { useState, useEffect } from "react";
 
 function cleanSelectedText(s?: string): string | undefined {
   return s
@@ -22,55 +24,29 @@ function cleanSelectedText(s?: string): string | undefined {
 
 function SelectedTextCambridge() {
   const plugin = usePlugin();
-  const [entries, setEntries] = useState<CambridgeWordEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
 
   const searchTerm = useDebounce(
     useTrackerPlugin(async (reactivePlugin) => {
       const sel = await reactivePlugin.editor.getSelection();
       if (sel?.type == SelectionType.Text) {
-        return cleanSelectedText(await reactivePlugin.richText.toString(sel.richText));
+        return cleanSelectedText(
+          await reactivePlugin.richText.toString(sel.richText)
+        );
       } else {
         return undefined;
       }
     }),
-    500
+    300
   );
 
-  // Fetch definitions when search term changes
-  useEffect(() => {
-    if (!searchTerm) {
-      setEntries([]);
-      return;
-    }
+  // Fetch directly from the CORS-safe JSON API (same technique as official plugin)
+  const { response, isLoading, isError } = useFetch<any[] | null>(
+    searchTerm ? API_BASE_URL + encodeURIComponent(searchTerm.toLowerCase()) : null,
+    null
+  );
 
-    let cancelled = false;
-    const fetchData = async () => {
-      setIsLoading(true);
-      setIsError(false);
-      try {
-        const results = await fetchWordDefinitions(searchTerm);
-        if (!cancelled) {
-          setEntries(results);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setIsError(true);
-          console.error("Cambridge fetch error:", e);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-    return () => {
-      cancelled = true;
-    };
-  }, [searchTerm]);
+  const entries: CambridgeWordEntry[] =
+    response && Array.isArray(response) ? mapApiResponseToEntries(response) : [];
 
   const handleSaveEntry = async (entry: CambridgeWordEntry) => {
     const success = await createWordRem(plugin, entry);
@@ -85,12 +61,12 @@ function SelectedTextCambridge() {
   };
 
   return (
-    <div className="min-h-[200px] max-h-[500px] overflow-y-scroll m-4 font-inter">
+    <div className="min-h-[200px] max-h-[500px] overflow-y-scroll m-4">
       {isLoading ? (
         <LoadingSpinnerPlugin />
       ) : isError ? (
         <p className="rn-clr-content-secondary">
-          An error occurred fetching from Cambridge Dictionary.
+          An error occurred fetching from the dictionary.
         </p>
       ) : searchTerm ? (
         entries.length > 0 ? (
@@ -101,12 +77,12 @@ function SelectedTextCambridge() {
           />
         ) : (
           <p className="rn-clr-content-secondary">
-            No Cambridge Dictionary definition found for &quot;{searchTerm}&quot;.
+            No definition found for &quot;{searchTerm}&quot;.
           </p>
         )
       ) : (
         <p className="rn-clr-content-secondary">
-          Select a word to look it up on Cambridge Dictionary.
+          Select a word to look it up.
         </p>
       )}
     </div>
