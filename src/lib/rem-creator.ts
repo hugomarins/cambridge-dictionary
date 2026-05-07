@@ -1,32 +1,33 @@
 /**
  * Rem Creator
  *
- * Creates RemNote Rem entries from dictionary word data.
- * Each entry gets the "Cambridge Dictionary" powerup with property slots.
+ * Creates RemNote Rem entries from DictionaryEntry data.
+ * Each entry gets the powerup with 8 property slots.
  */
 
 import { RNPlugin } from "@remnote/plugin-sdk";
-import { CambridgeWordEntry } from "./models";
+import { DictionaryEntry } from "./models";
 import {
   powerupCode,
   SLOT_GRAMMAR,
   SLOT_PRONUNCIATION,
-  SLOT_DEFINITION,
-  SLOT_EXAMPLES,
   SLOT_AUDIO,
-  SLOT_EXTRA,
+  SLOT_DEFINITION,
+  SLOT_EXAMPLE,
+  SLOT_SYNONYMS,
+  SLOT_ANTONYMS,
+  SLOT_SOURCE,
   SETTING_ROOT_REM,
 } from "./constants";
 import { log } from "./logging";
 
 /**
- * Create a Rem entry from a word entry.
+ * Create a single Rem entry from a DictionaryEntry.
  * The Rem's name (text) is the word itself.
- * Properties: Grammar, Pronunciation, Definition, Examples, Audio.
  */
 export async function createWordRem(
   plugin: RNPlugin,
-  entry: CambridgeWordEntry
+  entry: DictionaryEntry
 ): Promise<boolean> {
   const rootRemName = (await plugin.settings.getSetting(SETTING_ROOT_REM)) as
     | string
@@ -34,7 +35,7 @@ export async function createWordRem(
   if (!rootRemName) {
     log(
       plugin,
-      'Please set the "Cambridge Dictionary Root Rem" in plugin settings first.',
+      'Please set the "Root Rem" in plugin settings first.',
       true
     );
     return false;
@@ -56,52 +57,65 @@ export async function createWordRem(
     return false;
   }
 
-  // The Rem name is the word (omit SLOT_WORD — it's redundant)
-  await wordRem.setText([entry.wordTitle]);
+  // The Rem name is the word
+  await wordRem.setText([entry.word]);
 
-  // Add the Cambridge Dictionary powerup
+  // Add the powerup
   await wordRem.addPowerup(powerupCode);
 
   // Grammar (part of speech)
-  if (entry.wordPartOfSpeech) {
+  if (entry.partOfSpeech) {
     await wordRem.setPowerupProperty(powerupCode, SLOT_GRAMMAR, [
-      entry.wordPartOfSpeech,
+      entry.partOfSpeech,
     ]);
   }
 
   // Pronunciation (IPA)
-  if (entry.wordProUk) {
+  if (entry.pronunciation) {
     await wordRem.setPowerupProperty(powerupCode, SLOT_PRONUNCIATION, [
-      entry.wordProUk,
+      entry.pronunciation,
+    ]);
+  }
+
+  // Audio — RichTextAudioInterface for native playback
+  if (entry.audioUrl) {
+    await wordRem.setPowerupProperty(powerupCode, SLOT_AUDIO, [
+      { i: "a", url: entry.audioUrl, onlyAudio: true } as any,
     ]);
   }
 
   // Definition
-  if (entry.wordSpecific) {
+  if (entry.definition) {
     await wordRem.setPowerupProperty(powerupCode, SLOT_DEFINITION, [
-      entry.wordSpecific,
+      entry.definition,
     ]);
   }
 
-  // Examples
-  const examplesStr = entry.wordExamples.join("\n");
-  if (examplesStr) {
-    await wordRem.setPowerupProperty(powerupCode, SLOT_EXAMPLES, [
-      examplesStr,
+  // Example
+  if (entry.example) {
+    await wordRem.setPowerupProperty(powerupCode, SLOT_EXAMPLE, [
+      entry.example,
     ]);
   }
 
-  // Audio — use RichTextAudioInterface so RemNote renders a native audio player
-  if (entry.wordUkMedia) {
-    await wordRem.setPowerupProperty(powerupCode, SLOT_AUDIO, [
-      { i: "a", url: entry.wordUkMedia, onlyAudio: true } as any,
+  // Synonyms
+  if (entry.synonyms) {
+    await wordRem.setPowerupProperty(powerupCode, SLOT_SYNONYMS, [
+      entry.synonyms,
     ]);
   }
 
-  // Extra (synonyms, antonyms, general meaning context)
-  if (entry.usage) {
-    await wordRem.setPowerupProperty(powerupCode, SLOT_EXTRA, [
-      entry.usage,
+  // Antonyms
+  if (entry.antonyms) {
+    await wordRem.setPowerupProperty(powerupCode, SLOT_ANTONYMS, [
+      entry.antonyms,
+    ]);
+  }
+
+  // Source URL
+  if (entry.sourceUrl) {
+    await wordRem.setPowerupProperty(powerupCode, SLOT_SOURCE, [
+      entry.sourceUrl,
     ]);
   }
 
@@ -112,20 +126,4 @@ export async function createWordRem(
   await wordRem.setIsCardItem(true);
 
   return true;
-}
-
-/**
- * Create Rem entries for multiple word entries.
- * Returns count of successes.
- */
-export async function createMultipleWordRems(
-  plugin: RNPlugin,
-  entries: CambridgeWordEntry[]
-): Promise<number> {
-  let count = 0;
-  for (const entry of entries) {
-    const success = await createWordRem(plugin, entry);
-    if (success) count++;
-  }
-  return count;
 }

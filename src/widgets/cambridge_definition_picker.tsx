@@ -1,21 +1,21 @@
 /**
- * Cambridge Definition Picker
+ * Definition Picker Widget
  *
- * Popup widget that displays all fetched definitions grouped by part of speech.
- * The user selects one and clicks "Import" to save it as a Rem.
+ * Popup that displays all fetched definitions.
+ * The user selects one and clicks "Import" to create a Rem.
  *
- * Data is passed via session storage key "cambridge_picker_entries".
+ * Data is passed via session storage key PICKER_KEY.
  */
 import React, { useState, useEffect } from "react";
 import { renderWidget, usePlugin } from "@remnote/plugin-sdk";
-import { CambridgeWordEntry } from "../lib/models";
+import { DictionaryEntry } from "../lib/models";
 import { createWordRem } from "../lib/rem-creator";
 import { log } from "../lib/logging";
 import { PICKER_KEY } from "../lib/constants";
 
 function CambridgeDefinitionPicker() {
   const plugin = usePlugin();
-  const [entries, setEntries] = useState<CambridgeWordEntry[]>([]);
+  const [entries, setEntries] = useState<DictionaryEntry[]>([]);
   const [selected, setSelected] = useState<number>(0);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState("");
@@ -39,7 +39,7 @@ function CambridgeDefinitionPicker() {
     setStatus("Importing...");
     const success = await createWordRem(plugin, entry);
     if (success) {
-      log(plugin, `Added "${entry.wordTitle}" to your knowledge base!`, true);
+      log(plugin, `Added "${entry.word}" to your knowledge base!`, true);
       await plugin.widget.closePopup();
     } else {
       setStatus("Import failed — check your Root Rem setting.");
@@ -62,16 +62,16 @@ function CambridgeDefinitionPicker() {
     >
       {/* Header */}
       <div className="text-xl font-bold rn-clr-content-primary">
-        {entries[0].wordTitle}
-        {entries[0].wordProUk && (
+        {entries[0].word}
+        {entries[0].pronunciation && (
           <span className="ml-3 text-sm font-normal rn-clr-content-secondary">
-            {entries[0].wordProUk}
+            {entries[0].pronunciation}
           </span>
         )}
       </div>
 
       <div className="text-xs rn-clr-content-tertiary mb-1">
-        Select a definition to import:
+        Select a definition to import ({entries.length} found):
       </div>
 
       {/* Definition list */}
@@ -102,22 +102,28 @@ function CambridgeDefinitionPicker() {
             <div className="flex flex-col gap-1">
               {/* Part of speech */}
               <span className="text-xs italic rn-clr-content-tertiary">
-                {e.wordPartOfSpeech}
+                {e.partOfSpeech}
               </span>
               {/* Definition */}
               <span className="text-sm font-medium rn-clr-content-primary">
-                {e.wordSpecific}
+                {e.definition}
               </span>
-              {/* First example */}
-              {e.wordExamples[0] && (
+              {/* Example */}
+              {e.example && (
                 <span className="text-xs italic rn-clr-content-secondary">
-                  "{e.wordExamples[0]}"
+                  "{e.example}"
                 </span>
               )}
-              {/* Extra (synonyms/antonyms) */}
-              {e.usage && (
+              {/* Synonyms */}
+              {e.synonyms && (
                 <span className="text-xs rn-clr-content-tertiary">
-                  {e.usage}
+                  <strong>Syn:</strong> {e.synonyms}
+                </span>
+              )}
+              {/* Antonyms */}
+              {e.antonyms && (
+                <span className="text-xs rn-clr-content-tertiary">
+                  <strong>Ant:</strong> {e.antonyms}
                 </span>
               )}
             </div>

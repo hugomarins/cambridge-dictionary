@@ -1,18 +1,16 @@
 import {
   renderWidget,
   usePlugin,
-  RNPlugin,
-  LoadingSpinnerPlugin,
   useTrackerPlugin,
   SelectionType,
 } from "@remnote/plugin-sdk";
 import React from "react";
 import { PreviewCambridgeDefinitions } from "../components/PreviewCambridgeDefinitions";
-import { CambridgeWordEntry } from "../lib/models";
+import { DictionaryEntry } from "../lib/models";
 import { useDebounce } from "../hooks/useDebounce";
 import { useFetch } from "../hooks/useFetch";
 import { API_BASE_URL, mapApiResponseToEntries } from "../lib/scraper";
-import { createWordRem, createMultipleWordRems } from "../lib/rem-creator";
+import { createWordRem } from "../lib/rem-creator";
 import { log } from "../lib/logging";
 
 function cleanSelectedText(s?: string): string | undefined {
@@ -39,31 +37,26 @@ function SelectedTextCambridge() {
     300
   );
 
-  // Fetch directly from the CORS-safe JSON API (same technique as official plugin)
+  // Fetch directly from the CORS-safe JSON API
   const { response, isLoading, isError } = useFetch<any[] | null>(
     searchTerm ? API_BASE_URL + encodeURIComponent(searchTerm.toLowerCase()) : null,
     null
   );
 
-  const entries: CambridgeWordEntry[] =
+  const entries: DictionaryEntry[] =
     response && Array.isArray(response) ? mapApiResponseToEntries(response) : [];
 
-  const handleSaveEntry = async (entry: CambridgeWordEntry) => {
+  const handleSaveEntry = async (entry: DictionaryEntry) => {
     const success = await createWordRem(plugin, entry);
     if (success) {
-      log(plugin, `Added "${entry.wordTitle}" to your knowledge base!`, true);
+      log(plugin, `Added "${entry.word}" to your knowledge base!`, true);
     }
-  };
-
-  const handleSaveAll = async () => {
-    const count = await createMultipleWordRems(plugin, entries);
-    log(plugin, `Added ${count} definitions to your knowledge base!`, true);
   };
 
   return (
     <div className="min-h-[200px] max-h-[500px] overflow-y-scroll m-4">
       {isLoading ? (
-        <LoadingSpinnerPlugin />
+        <p className="rn-clr-content-secondary">Looking up…</p>
       ) : isError ? (
         <p className="rn-clr-content-secondary">
           An error occurred fetching from the dictionary.
@@ -73,7 +66,6 @@ function SelectedTextCambridge() {
           <PreviewCambridgeDefinitions
             entries={entries}
             onSaveEntry={handleSaveEntry}
-            onSaveAll={handleSaveAll}
           />
         ) : (
           <p className="rn-clr-content-secondary">

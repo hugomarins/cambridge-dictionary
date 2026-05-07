@@ -1,9 +1,16 @@
+/**
+ * Word Input Widget
+ *
+ * Popup widget where the user types a word (or pastes a Cambridge URL).
+ * Fetches definitions from the Free Dictionary API, stores them in session
+ * storage, then opens the definition picker popup.
+ */
 import { renderWidget, usePlugin } from "@remnote/plugin-sdk";
 import React, { useState, useRef, useEffect } from "react";
-import { fetchWordFromUrl } from "../lib/scraper";
+import { fetchWord } from "../lib/scraper";
 import { PICKER_KEY } from "../lib/constants";
 
-function CambridgeUrlInput() {
+function CambridgeWordInput() {
   const plugin = usePlugin();
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("");
@@ -22,14 +29,10 @@ function CambridgeUrlInput() {
     setIsLoading(true);
     setStatus("Fetching definitions…");
 
-    const entries = await fetchWordFromUrl(trimmed);
+    const entries = await fetchWord(trimmed);
 
     if (entries.length === 0) {
-      setStatus(
-        trimmed.includes("cambridge.org")
-          ? "No definitions found. Make sure the URL contains a valid word path, e.g. /dictionary/english/cranky"
-          : `No definitions found for "${trimmed}".`
-      );
+      setStatus(`No definitions found for "${trimmed}".`);
       setIsLoading(false);
       return;
     }
@@ -39,15 +42,10 @@ function CambridgeUrlInput() {
     // Pass entries to the picker via session storage
     await plugin.storage.setSession(PICKER_KEY, JSON.stringify(entries));
 
-    // Close the URL input popup and open the picker
+    // Close this popup and open the picker
     await plugin.widget.closePopup();
     await plugin.widget.openPopup("cambridge_definition_picker");
   };
-
-  const isCambridgeUrl = input.includes("dictionary.cambridge.org");
-  const placeholder = isCambridgeUrl
-    ? "https://dictionary.cambridge.org/dictionary/english/cranky"
-    : "Type a word (e.g. cranky) or paste a Cambridge URL";
 
   return (
     <div className="flex flex-col p-4 gap-4 rn-clr-background">
@@ -55,24 +53,24 @@ function CambridgeUrlInput() {
         Look Up a Word
       </div>
       <div className="text-sm rn-clr-content-secondary">
-        Enter an English word <em>or</em> paste a Cambridge Dictionary URL.
+        Enter an English word to look up its definitions.
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <label htmlFor="word-or-url-input" className="font-semibold rn-clr-content-primary text-sm">
-            Word or URL:
+          <label htmlFor="word-input" className="font-semibold rn-clr-content-primary text-sm">
+            Word:
           </label>
           <input
             ref={inputRef}
-            id="word-or-url-input"
+            id="word-input"
             type="text"
             value={input}
             onChange={(e) => {
               setInput(e.target.value);
               setStatus("");
             }}
-            placeholder={placeholder}
+            placeholder="e.g., serendipity"
             disabled={isLoading}
             className="px-3 py-2 rounded text-sm rn-clr-content-primary rn-clr-background-main border-solid border rn-clr-border-opaque"
             style={{ outline: "none" }}
@@ -111,4 +109,4 @@ function CambridgeUrlInput() {
   );
 }
 
-renderWidget(CambridgeUrlInput);
+renderWidget(CambridgeWordInput);

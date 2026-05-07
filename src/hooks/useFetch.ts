@@ -56,6 +56,11 @@ export function useFetch<T>(
       dispatch({ type: FetchDataActionType.INIT });
       try {
         const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) {
+          // API returned an error status (e.g. 404 for unknown words)
+          dispatch({ type: FetchDataActionType.DONE, payload: initialData });
+          return;
+        }
         const json = await res.json();
         dispatch({ type: FetchDataActionType.DONE, payload: json });
       } catch (e) {

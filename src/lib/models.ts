@@ -1,43 +1,57 @@
 /**
+ * A single dictionary word entry.
+ *
+ * Each field maps 1:1 to a powerup slot in RemNote.
+ * Currently sourced from dictionaryapi.dev (Free Dictionary API).
+ */
+export interface DictionaryEntry {
+  /** The headword, e.g. "example" */
+  word: string;
+  /** Part of speech, e.g. "noun", "verb" */
+  partOfSpeech: string;
+  /** IPA pronunciation text, e.g. "/ɪɡˈzɑːm.pəl/" */
+  pronunciation: string;
+  /** URL to pronunciation audio MP3 */
+  audioUrl: string;
+  /** The definition text */
+  definition: string;
+  /** Example sentence for this definition */
+  example: string;
+  /** Comma-separated synonyms */
+  synonyms: string;
+  /** Comma-separated antonyms */
+  antonyms: string;
+  /** Source URL (e.g. Wiktionary) */
+  sourceUrl: string;
+}
+
+// ─── Legacy types (kept for future Cambridge scraper investigation) ───────────
+
+/**
+ * @deprecated Use DictionaryEntry instead.
  * A single word entry parsed from Cambridge Dictionary.
  * Mirrors the Anki add-on's word_entry class.
  */
 export interface CambridgeWordEntry {
-  /** Dictionary identifier, e.g. "dataset_cald4" */
   wordDictionaryId: string;
-  /** Human-readable dictionary name */
   wordDictionary: string;
-  /** The headword, e.g. "example" */
   wordTitle: string;
-  /** Part of speech, e.g. "noun [C]" */
   wordPartOfSpeech: string;
-  /** UK IPA pronunciation, e.g. "UK /ɪɡˈzɑːm.pəl/" */
   wordProUk: string;
-  /** US IPA pronunciation */
   wordProUs: string;
-  /** URL to UK pronunciation audio MP3 */
   wordUkMedia: string;
-  /** URL to US pronunciation audio MP3 */
   wordUsMedia: string;
-  /** URL to illustration image */
   wordImage: string;
-  /** General meaning heading, e.g. "TYPICAL" */
   wordGeneral: string;
-  /** Specific definition text */
   wordSpecific: string;
-  /** Specific grammar info for the definition */
   wordSpecificGram: string;
-  /** Example sentences */
   wordExamples: string[];
-  /** Usage label, e.g. "formal", "informal" */
   usage: string;
-  /** Cambridge sense ID for matching with wordlist entries */
   senseId: string;
 }
 
 /**
- * An entry from a Cambridge Plus wordlist.
- * Mirrors the Anki add-on's wordlist_entry class.
+ * @deprecated Kept for future Cambridge Plus investigation.
  */
 export interface WordlistEntry {
   wordlistId: string;
