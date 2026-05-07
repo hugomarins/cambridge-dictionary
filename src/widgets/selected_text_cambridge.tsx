@@ -47,9 +47,11 @@ function SelectedTextCambridge() {
     response && Array.isArray(response) ? mapApiResponseToEntries(response) : [];
 
   const handleSaveEntry = async (entry: DictionaryEntry) => {
-    const success = await createWordRem(plugin, entry);
-    if (success) {
+    const remId = await createWordRem(plugin, entry);
+    if (remId) {
       log(plugin, `Added "${entry.word}" to your knowledge base!`, true);
+      await plugin.editor.delete();
+      await plugin.editor.insertRichText([{ i: "q", _id: remId } as any]);
     }
   };
 

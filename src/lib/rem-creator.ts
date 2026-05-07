@@ -5,7 +5,7 @@
  * Each entry gets the powerup with 8 property slots.
  */
 
-import { RNPlugin } from "@remnote/plugin-sdk";
+import { RNPlugin, SetRemType } from "@remnote/plugin-sdk";
 import { DictionaryEntry } from "./models";
 import {
   powerupCode,
@@ -28,7 +28,7 @@ import { log } from "./logging";
 export async function createWordRem(
   plugin: RNPlugin,
   entry: DictionaryEntry
-): Promise<boolean> {
+): Promise<string | null> {
   const rootRemName = (await plugin.settings.getSetting(SETTING_ROOT_REM)) as
     | string
     | undefined;
@@ -38,7 +38,7 @@ export async function createWordRem(
       'Please set the "Root Rem" in plugin settings first.',
       true
     );
-    return false;
+    return null;
   }
 
   let rootRem = await plugin.rem.findByName([rootRemName], null);
@@ -46,7 +46,7 @@ export async function createWordRem(
     rootRem = await plugin.rem.createRem();
     if (!rootRem) {
       log(plugin, `Failed to create root Rem "${rootRemName}".`, true);
-      return false;
+      return null;
     }
     await rootRem.setText([rootRemName]);
     log(plugin, `Created root Rem "${rootRemName}".`);
@@ -55,11 +55,12 @@ export async function createWordRem(
   const wordRem = await plugin.rem.createRem();
   if (!wordRem) {
     log(plugin, "Failed to create Rem.", true);
-    return false;
+    return null;
   }
 
   // The Rem name is the word
   await wordRem.setText([entry.word]);
+  await wordRem.setType(SetRemType.CONCEPT);
 
   // Add the powerup
   await wordRem.addPowerup(powerupCode);
@@ -130,5 +131,5 @@ export async function createWordRem(
     await definitionSlotRem.setPracticeDirection("backward");
   }
 
-  return true;
+  return wordRem._id;
 }
