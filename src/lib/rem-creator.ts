@@ -123,8 +123,11 @@ export async function createWordRem(
   // Parent under root Rem
   await wordRem.setParent(rootRem._id);
 
-  // Enable flashcard
-  await wordRem.setIsCardItem(true);
+  // Make the definition slot a backward card (see definition → recall word)
+  const definitionSlotRem = await wordRem.getPowerupPropertyAsRem(powerupCode, SLOT_DEFINITION);
+  if (definitionSlotRem) {
+    await definitionSlotRem.setPracticeDirection("backward");
+  }
 
   return true;
 }
