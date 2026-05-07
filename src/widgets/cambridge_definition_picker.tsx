@@ -12,6 +12,7 @@ import { DictionaryEntry } from "../lib/models";
 import { createWordRem } from "../lib/rem-creator";
 import { log } from "../lib/logging";
 import { PICKER_KEY } from "../lib/constants";
+import { groupBy, capitalize } from "../lib/utils";
 
 function CambridgeDefinitionPicker() {
   const plugin = usePlugin();
@@ -62,67 +63,94 @@ function CambridgeDefinitionPicker() {
     >
       {/* Fixed header */}
       <div className="px-4 pt-4 pb-3 flex-shrink-0">
-        <div className="text-xl font-bold rn-clr-content-primary">
-          {entries[0].word}
-          {entries[0].pronunciation && (
-            <span className="ml-3 text-sm font-normal rn-clr-content-secondary">
-              {entries[0].pronunciation}
+        <div className="flex items-center gap-2">
+          <span className="text-xl font-bold rn-clr-content-primary">
+            {capitalize(entries[0].word)}
+          </span>
+          {entries[0].audioUrl && (
+            <span
+              className="cursor-pointer text-base"
+              title="Play pronunciation"
+              onClick={() => new Audio(entries[0].audioUrl).play()}
+            >
+              🔊
             </span>
           )}
         </div>
+        {entries[0].pronunciation && (
+          <div className="text-sm rn-clr-content-secondary mt-0.5">
+            {entries[0].pronunciation}
+          </div>
+        )}
         <div className="text-xs rn-clr-content-tertiary mt-1">
           Select a definition to import ({entries.length} found):
         </div>
       </div>
 
-      {/* Scrollable definition list */}
-      <div className="flex-1 overflow-y-auto px-4 flex flex-col gap-2">
-        {entries.map((e, idx) => (
-          <label
-            key={idx}
-            className="flex items-start gap-2 cursor-pointer p-2 rounded"
-            style={{
-              background:
-                selected === idx ? "rgba(59,130,246,0.12)" : "transparent",
-              border:
-                selected === idx
-                  ? "1px solid rgba(59,130,246,0.5)"
-                  : "1px solid transparent",
-              transition: "all 0.15s",
-            }}
-          >
-            <input
-              type="radio"
-              name="definition"
-              checked={selected === idx}
-              onChange={() => setSelected(idx)}
-              className="mt-1 flex-shrink-0"
-            />
-            <div className="flex flex-col gap-1">
-              <span className="text-xs italic rn-clr-content-tertiary">
-                {e.partOfSpeech}
-              </span>
-              <span className="text-sm font-medium rn-clr-content-primary">
-                {e.definition}
-              </span>
-              {e.example && (
-                <span className="text-xs italic rn-clr-content-secondary">
-                  "{e.example}"
-                </span>
+      {/* Scrollable definition list — grouped by part of speech */}
+      <div className="flex-1 overflow-y-auto px-4">
+        {Object.entries(groupBy(entries, (e) => e.partOfSpeech || "")).map(
+          ([pos, posEntries]) => (
+            <div key={pos} className="mb-4">
+              {pos && (
+                <div className="text-sm font-medium italic rn-clr-content-primary mb-2">
+                  {pos}
+                </div>
               )}
-              {e.synonyms && (
-                <span className="text-xs rn-clr-content-tertiary">
-                  <strong>Syn:</strong> {e.synonyms}
-                </span>
-              )}
-              {e.antonyms && (
-                <span className="text-xs rn-clr-content-tertiary">
-                  <strong>Ant:</strong> {e.antonyms}
-                </span>
-              )}
+              <div className="flex flex-col gap-2">
+                {posEntries.map((e) => {
+                  const idx = entries.indexOf(e);
+                  return (
+                    <label
+                      key={idx}
+                      className="flex items-start gap-2 cursor-pointer pl-3 border-l-2 py-1"
+                      style={{
+                        borderColor:
+                          selected === idx
+                            ? "rgba(59,130,246,0.7)"
+                            : "var(--rn-clr-border-opaque)",
+                        background:
+                          selected === idx
+                            ? "rgba(59,130,246,0.07)"
+                            : "transparent",
+                        borderRadius: "0 4px 4px 0",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="definition"
+                        checked={selected === idx}
+                        onChange={() => setSelected(idx)}
+                        className="mt-1 flex-shrink-0"
+                      />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium rn-clr-content-primary">
+                          {e.definition}
+                        </span>
+                        {e.example && (
+                          <span className="text-xs italic rn-clr-content-secondary">
+                            • {e.example}
+                          </span>
+                        )}
+                        {e.synonyms && (
+                          <span className="text-xs rn-clr-content-tertiary">
+                            <strong>Syn:</strong> {e.synonyms}
+                          </span>
+                        )}
+                        {e.antonyms && (
+                          <span className="text-xs rn-clr-content-tertiary">
+                            <strong>Ant:</strong> {e.antonyms}
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-          </label>
-        ))}
+          )
+        )}
       </div>
 
       {/* Fixed footer */}
