@@ -130,14 +130,14 @@ async function onActivate(plugin: ReactRNPlugin) {
         }
 
         try {
-          await legacyRem.setType(SetRemType.DEFAULT_TYPE);
+          await legacyRem.setType(SetRemType.CONCEPT);
           await legacyRem.remove();
           console.log("[Dict Cleanup] Phase 1: deleted legacy powerup Rem");
           await plugin.app.toast(`✅ Stripped ${removed} tag(s) and deleted the legacy powerup Rem.`);
         } catch (e) {
           console.error("[Dict Cleanup] Phase 1: could not delete legacy powerup Rem:", e);
           await plugin.app.toast(
-            `Stripped ${removed} tag(s). Could not delete the powerup Rem — you may need to delete it manually.`
+            `Stripped ${removed} tag(s). Could not delete the powerup Rem — delete it manually.`
           );
         }
         console.log(`[Dict Cleanup] Phase 1 done: ${removed}/${taggedRems.length} Rems untagged`);
