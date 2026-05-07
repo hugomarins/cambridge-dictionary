@@ -41,14 +41,15 @@ export async function createWordRem(
     return false;
   }
 
-  const rootRem = await plugin.rem.findByName([rootRemName], null);
+  let rootRem = await plugin.rem.findByName([rootRemName], null);
   if (!rootRem) {
-    log(
-      plugin,
-      `Could not find root Rem "${rootRemName}". Please create it first.`,
-      true
-    );
-    return false;
+    rootRem = await plugin.rem.createRem();
+    if (!rootRem) {
+      log(plugin, `Failed to create root Rem "${rootRemName}".`, true);
+      return false;
+    }
+    await rootRem.setText([rootRemName]);
+    log(plugin, `Created root Rem "${rootRemName}".`);
   }
 
   const wordRem = await plugin.rem.createRem();
