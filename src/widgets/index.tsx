@@ -63,7 +63,7 @@ async function onActivate(plugin: ReactRNPlugin) {
   await plugin.app.registerWidget(
     "cambridge_definition_picker",
     WidgetLocation.Popup,
-    { dimensions: { width: 560, height: "auto" } }
+    { dimensions: { width: 560, height: 620 } }
   );
 
   // ─── Register Settings ───
@@ -82,6 +82,7 @@ async function onActivate(plugin: ReactRNPlugin) {
     id: "cambridge-search",
     name: "Dictionary: Look Up Word",
     description: "Look up an English word and choose a definition to import",
+    quickCode: "dic",
     action: async () => {
       await plugin.widget.openPopup("dictionary_word_input");
     },

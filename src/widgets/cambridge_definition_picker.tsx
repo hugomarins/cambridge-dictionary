@@ -57,34 +57,33 @@ function CambridgeDefinitionPicker() {
 
   return (
     <div
-      className="flex flex-col p-4 gap-3 rn-clr-background"
-      style={{ maxHeight: 520, overflowY: "auto" }}
+      className="flex flex-col rn-clr-background"
+      style={{ height: 620 }}
     >
-      {/* Header */}
-      <div className="text-xl font-bold rn-clr-content-primary">
-        {entries[0].word}
-        {entries[0].pronunciation && (
-          <span className="ml-3 text-sm font-normal rn-clr-content-secondary">
-            {entries[0].pronunciation}
-          </span>
-        )}
+      {/* Fixed header */}
+      <div className="px-4 pt-4 pb-3 flex-shrink-0">
+        <div className="text-xl font-bold rn-clr-content-primary">
+          {entries[0].word}
+          {entries[0].pronunciation && (
+            <span className="ml-3 text-sm font-normal rn-clr-content-secondary">
+              {entries[0].pronunciation}
+            </span>
+          )}
+        </div>
+        <div className="text-xs rn-clr-content-tertiary mt-1">
+          Select a definition to import ({entries.length} found):
+        </div>
       </div>
 
-      <div className="text-xs rn-clr-content-tertiary mb-1">
-        Select a definition to import ({entries.length} found):
-      </div>
-
-      {/* Definition list */}
-      <div className="flex flex-col gap-2">
+      {/* Scrollable definition list */}
+      <div className="flex-1 overflow-y-auto px-4 flex flex-col gap-2">
         {entries.map((e, idx) => (
           <label
             key={idx}
             className="flex items-start gap-2 cursor-pointer p-2 rounded"
             style={{
               background:
-                selected === idx
-                  ? "rgba(59,130,246,0.12)"
-                  : "transparent",
+                selected === idx ? "rgba(59,130,246,0.12)" : "transparent",
               border:
                 selected === idx
                   ? "1px solid rgba(59,130,246,0.5)"
@@ -100,27 +99,22 @@ function CambridgeDefinitionPicker() {
               className="mt-1 flex-shrink-0"
             />
             <div className="flex flex-col gap-1">
-              {/* Part of speech */}
               <span className="text-xs italic rn-clr-content-tertiary">
                 {e.partOfSpeech}
               </span>
-              {/* Definition */}
               <span className="text-sm font-medium rn-clr-content-primary">
                 {e.definition}
               </span>
-              {/* Example */}
               {e.example && (
                 <span className="text-xs italic rn-clr-content-secondary">
                   "{e.example}"
                 </span>
               )}
-              {/* Synonyms */}
               {e.synonyms && (
                 <span className="text-xs rn-clr-content-tertiary">
                   <strong>Syn:</strong> {e.synonyms}
                 </span>
               )}
-              {/* Antonyms */}
               {e.antonyms && (
                 <span className="text-xs rn-clr-content-tertiary">
                   <strong>Ant:</strong> {e.antonyms}
@@ -131,35 +125,39 @@ function CambridgeDefinitionPicker() {
         ))}
       </div>
 
-      {status && (
-        <div className="text-sm rn-clr-content-secondary">{status}</div>
-      )}
-
-      {/* Actions */}
-      <div className="flex justify-end gap-2 pt-2 border-t" style={{ borderColor: "var(--rn-clr-border-opaque)" }}>
-        <button
-          type="button"
-          onClick={() => plugin.widget.closePopup()}
-          disabled={isSaving}
-          className="px-4 py-2 rounded text-sm rn-clr-content-secondary"
-          style={{ border: "1px solid var(--rn-clr-border-opaque)" }}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleImport}
-          disabled={isSaving || !entry}
-          className="px-4 py-2 rounded text-sm font-semibold"
-          style={{
-            background: isSaving ? "#93C5FD" : "#3B82F6",
-            color: "white",
-            border: "none",
-            cursor: isSaving ? "not-allowed" : "pointer",
-          }}
-        >
-          {isSaving ? "Importing…" : "Import"}
-        </button>
+      {/* Fixed footer */}
+      <div
+        className="px-4 py-3 flex-shrink-0 border-t"
+        style={{ borderColor: "var(--rn-clr-border-opaque)" }}
+      >
+        {status && (
+          <div className="text-sm rn-clr-content-secondary mb-2">{status}</div>
+        )}
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => plugin.widget.closePopup()}
+            disabled={isSaving}
+            className="px-4 py-2 rounded text-sm rn-clr-content-secondary"
+            style={{ border: "1px solid var(--rn-clr-border-opaque)" }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleImport}
+            disabled={isSaving || !entry}
+            className="px-4 py-2 rounded text-sm font-semibold"
+            style={{
+              background: isSaving ? "#93C5FD" : "#3B82F6",
+              color: "white",
+              border: "none",
+              cursor: isSaving ? "not-allowed" : "pointer",
+            }}
+          >
+            {isSaving ? "Importing…" : "Import"}
+          </button>
+        </div>
       </div>
     </div>
   );
