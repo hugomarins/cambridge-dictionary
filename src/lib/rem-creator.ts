@@ -126,6 +126,7 @@ export async function createWordRem(
   // Make the definition slot a backward card (see definition → recall word)
   const definitionSlotRem = await wordRem.getPowerupPropertyAsRem(powerupCode, SLOT_DEFINITION);
   if (definitionSlotRem) {
+    await definitionSlotRem.setEnablePractice(true);
     await definitionSlotRem.setPracticeDirection("backward");
   }
 
