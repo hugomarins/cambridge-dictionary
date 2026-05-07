@@ -114,11 +114,12 @@ export async function createWordRem(
     ]);
   }
 
-  // Source URL
+  // Source URL — stored as a clickable hyperlink via markdown link syntax
   if (entry.sourceUrl) {
-    await wordRem.setPowerupProperty(powerupCode, SLOT_SOURCE, [
-      entry.sourceUrl,
-    ]);
+    const sourceRichText = await plugin.richText.parseFromMarkdown(
+      `[${entry.sourceUrl}](${entry.sourceUrl})`
+    );
+    await wordRem.setPowerupProperty(powerupCode, SLOT_SOURCE, sourceRichText);
   }
 
   // Parent under root Rem

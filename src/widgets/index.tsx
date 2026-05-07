@@ -156,16 +156,41 @@ async function onActivate(plugin: ReactRNPlugin) {
         console.warn("[Dict Cleanup] Phase 2: 'Eng Dictionary' powerup Rem not found — skipping.");
       } else {
         console.log(`[Dict Cleanup] Phase 2: found powerup Rem (id=${engDictPowerupRem._id})`);
-        const wordRems = (await engDictPowerupRem.taggedRem()) || [];
-        console.log(`[Dict Cleanup] Phase 2: ${wordRems.length} word Rem(s) to inspect`);
+        // 2a. Audit legacy slot definitions on the powerup Rem itself.
+        // RemNote blocks deletion of powerup slot Rems — log them for info only.
+        const powerupChildren = await engDictPowerupRem.getChildrenRem();
+        const legacySlotNames: string[] = [];
+        console.group(`[Dict Cleanup] Phase 2a: powerup Rem has ${powerupChildren.length} slot definition(s) — audit only (RemNote blocks slot deletion)`);
+        for (const child of powerupChildren) {
+          const text = child.text
+            ? await plugin.richText.toString(child.text)
+            : "";
+          if (!text) {
+            console.log(`  skip (empty text) id=${child._id}`);
+          } else if (CURRENT_SLOT_NAMES.has(text)) {
+            console.log(`  current: "${text}"`);
+          } else {
+            console.warn(`  legacy (cannot delete): "${text}" id=${child._id}`);
+            legacySlotNames.push(text);
+          }
+        }
+        console.groupEnd();
+        if (legacySlotNames.length > 0) {
+          console.warn(`[Dict Cleanup] Phase 2a: ${legacySlotNames.length} legacy slot definition(s) found but cannot be removed by the plugin API: ${legacySlotNames.join(", ")}`);
+          await plugin.app.toast(`⚠️ Found legacy slot(s) [${legacySlotNames.join(", ")}] on the powerup — RemNote blocks their deletion. They are inert (not registered) and can be ignored.`);
+        }
 
+        // 2b. Remove legacy slot instances from each tagged word Rem.
+        // These are regular children, not protected powerup slots, so removal works.
         let removedSlots = 0;
+        const wordRems = (await engDictPowerupRem.taggedRem()) || [];
+        console.log(`[Dict Cleanup] Phase 2b: ${wordRems.length} word Rem(s) to inspect`);
         for (const wordRem of wordRems) {
           const wordText = wordRem.text
             ? await plugin.richText.toString(wordRem.text)
             : wordRem._id;
           const children = await wordRem.getChildrenRem();
-          console.group(`[Dict Cleanup] Phase 2: word "${wordText}" — ${children.length} child(ren)`);
+          console.group(`[Dict Cleanup] Phase 2b: word "${wordText}" — ${children.length} child(ren)`);
           for (const child of children) {
             const text = child.text
               ? await plugin.richText.toString(child.text)
@@ -175,7 +200,7 @@ async function onActivate(plugin: ReactRNPlugin) {
             } else if (CURRENT_SLOT_NAMES.has(text)) {
               console.log(`  keep "${text}" (current slot)`);
             } else {
-              console.warn(`  remove "${text}" (legacy slot, id=${child._id})`);
+              console.warn(`  remove "${text}" (legacy slot instance, id=${child._id})`);
               await child.remove();
               removedSlots++;
             }
@@ -183,9 +208,9 @@ async function onActivate(plugin: ReactRNPlugin) {
           console.groupEnd();
         }
 
-        console.log(`[Dict Cleanup] Phase 2 done: ${removedSlots} legacy slot(s) removed across ${wordRems.length} word(s)`);
+        console.log(`[Dict Cleanup] Phase 2b done: ${removedSlots} legacy slot instance(s) removed across ${wordRems.length} word(s)`);
         if (removedSlots > 0) {
-          await plugin.app.toast(`✅ Removed ${removedSlots} legacy slot(s) from Eng Dictionary words.`);
+          await plugin.app.toast(`✅ Removed ${removedSlots} legacy slot instance(s) from word Rems.`);
         }
       }
 
